@@ -1,6 +1,7 @@
 # Beginner Game
-From a pygame tutorial => https://www.youtube.com/watch?v=AY9MnQ4x3zk
+From a pygame tutorial
 
-ignore the __pycache__ folder :)
+=> https://www.youtube.com/watch?v=AY9MnQ4x3zk
+
 
 
