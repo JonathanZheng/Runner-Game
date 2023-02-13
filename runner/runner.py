@@ -10,13 +10,13 @@ class Player(pygame.sprite.Sprite):
         self.gravity = 0
         self.idx = 0
         
-        player_walk_1 = pygame.image.load('graphics/player/player_walk_1.png').convert_alpha()
-        player_walk_2 = pygame.image.load('graphics/player/player_walk_2.png').convert_alpha()
+
         self.player_jump = pygame.image.load('graphics/player/jump.png').convert_alpha()
         
-        self.frame_list = [player_walk_1, player_walk_2]
-        self.image = self.frame_list[self.idx]
+        self.image = PLAYER["walk"][self.idx] 
         self.rect = self.image.get_rect(bottomleft = (100, 300))
+
+        self.mask = pygame.mask.from_surface(self.image)
     
     def jump(self):
         if keys[pygame.K_SPACE] and self.rect.bottom >= 300:
@@ -44,10 +44,10 @@ class Player(pygame.sprite.Sprite):
             self.image = self.player_jump
 
         else:
-            self.image = self.frame_list[int(self.idx)]
+            self.image = PLAYER["walk"][int(self.idx)]
             self.idx += 0.1
 
-        if int(self.idx) == len(self.frame_list):
+        if int(self.idx) == len(PLAYER["walk"]):
             self.idx = 0
 
     def update(self):
@@ -63,19 +63,17 @@ class Obstacle(pygame.sprite.Sprite):
         self.idx = 0
 
         if type == "snail":
-            snail1 = pygame.image.load('graphics/snail/snail1.png').convert_alpha()
-            snail2 = pygame.image.load('graphics/snail/snail2.png').convert_alpha()
-            self.frame_list = [snail1, snail2]
+            self.frame_list = SNAIL
             y_pos = 300
 
         else:
-            fly1 = pygame.image.load('graphics/fly/fly1.png').convert_alpha()
-            fly2 = pygame.image.load('graphics/fly/fly2.png').convert_alpha()
-            self.frame_list = [fly1, fly2]
+            self.frame_list = FLY
             y_pos = 200
 
         self.image = self.frame_list[self.idx]
-        self.rect = self.image.get_rect(bottomleft = (r(850,1050), y_pos))
+        self.rect = self.image.get_rect(bottomleft = (r(1000,1200), y_pos))
+
+        self.mask = pygame.mask.from_surface(self.image)
 
     def move(self):
 
@@ -100,47 +98,6 @@ player_grp.add(Player())
 
 obstacle_grp = pygame.sprite.Group()
 
-def rng_events():
-    global first, second, third, ok
-
-    if ok:
-        ok = False
-        first = r(10, 16)
-        second = r(18,27)
-        third = r(35,40)
-
-def increase_difficulty():
-    global obstacle_speed, player_speed
-    
-    if current_score == 5:
-        obstacle_speed = 6
-
-    elif current_score == first:
-        obstacle_speed = 12
-
-    elif current_score == first + 1:
-        obstacle_speed = 6
-
-    elif current_score == 16:
-        obstacle_speed = 7
-        player_speed = 4.5
-
-    elif current_score == second:
-        obstacle_speed = 12
-
-    elif current_score == second + 1:
-        obstacle_speed = 8
-
-    elif current_score == third:
-        obstacle_speed = 13
-
-    elif current_score == third + 1:
-        obstacle_speed = 9
-
-    elif current_score == 50:
-        obstacle_speed = 11
-        player_speed = 3
-
 def redraw_screen():
     screen.blit(sky, (0, 0))
     screen.blit(ground, (0, 300))
@@ -164,10 +121,10 @@ def display_scores():
     screen.blit(score, score_rect)
     screen.blit(highscore, highscore_rect)
 
-def check_collision():
+def check_collision(): # Use masks
     global game_active, high_score, obstacle_speed, player_speed, ok
 
-    if pygame.sprite.spritecollide(player_grp.sprite, obstacle_grp, False):
+    if pygame.sprite.groupcollide(player_grp, obstacle_grp, False, False, pygame.sprite.collide_mask):    
         game_active = False
         ok = True
         high_score = max(high_score, current_score)
@@ -191,6 +148,8 @@ def end_screen():
         screen.blit(highscore, highscore_rect)
     
 while True:
+    clock.tick(FPS)
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -200,20 +159,21 @@ while True:
         if game_active:
             if event.type == obstacle_timer:
                 obstacle_grp.add(Obstacle(choice(['snail', 'snail', 'fly'])))
+            if event.type == lvl_up_timer and obstacle_speed < max_obstacle_speed:
+                obstacle_speed += 1
         else:
             if keys[pygame.K_RETURN]:
                 game_active = True
                 start_time = pygame.time.get_ticks()*(60/FPS)/1000
 
     if game_active:
-        rng_events()
+
         redraw_screen()
         display_scores()
-        increase_difficulty()
+
         check_collision()
         
     else:
         end_screen()
     
     pygame.display.flip()
-    clock.tick(FPS)
